@@ -71,15 +71,15 @@ class DotImage:
   def invert(self, modified = False):
     match modified:
       case False:
-        for i in range(len(self.modified_image)):
-          self.modified_image[i][2] = 255- self.dot_image[i][2]
-          self.modified_image[i][3] = 255- self.dot_image[i][3]
-          self.modified_image[i][4] = 255- self.dot_image[i][4]
+        for i, image in enumerate(self.dot_image):
+          self.modified_image[i][2] = 255- image[2]
+          self.modified_image[i][3] = 255- image[3]
+          self.modified_image[i][4] = 255- image[4]
       case True:
-        for i in range(len(self.modified_image)):
-          self.modified_image[i][2] = 255- self.modified_image[i][2]
-          self.modified_image[i][3] = 255- self.modified_image[i][3]
-          self.modified_image[i][4] = 255- self.modified_image[i][4]
+        for i, image in enumerate(self.modified_image):
+          self.modified_image[i][2] = 255- image[2]
+          self.modified_image[i][3] = 255- image[3]
+          self.modified_image[i][4] = 255- image[4]
           
   def color_filter(self, color = None, strength = 50, modified = False):
     if modified == False:
@@ -88,29 +88,18 @@ class DotImage:
       image = copy.deepcopy(self.modified_image)
     match color:
       case 'Red'| 'red'| 'r'| 'R':
-        for i in range(len(image)):
-          if image[i][2] < 255-strength and image[i][2] + strength> 0:
-            image[i][2] = image[i][2] + strength
-          elif image[i][2] + strength <0:
-            image[i][2] = 0
-          else: 
-            image[i][2]= 255
+        var = 2
       case 'Green'| 'green'| 'g'| 'G':
-        for i in range(len(image)):
-          if image[i][3] < 255-strength and image[i][3] + strength> 0:
-            image[i][3] = image[i][3] + strength
-          elif image[i][3] + strength <0:
-            image[i][3] = 0
-          else: 
-            image[i][3]= 255
+        var = 3
       case 'Blue'| 'blue'| 'b'| 'B':
-        for i in range(len(image)):
-          if image[i][4] < 255-strength and image[i][4] + strength> 0:
-            image[i][4] = image[i][4] + strength
-          elif image[i][4] + strength <0:
-            image[i][4] = 0
+        var = 4
+    for pixel in image:
+          if pixel[var] < 255-strength and pixel[var] + strength> 0:
+            pixel[var]  +=  strength
+          elif pixel[var] + strength <0:
+            pixel[var] = 0
           else: 
-            image[i][4]= 255
+            pixel[var]= 255
     self.modified_image = image
     
   def many_color_filter(self, color = 'Red', strength = 100, modified = False):
@@ -131,8 +120,42 @@ class DotImage:
         self.color_filter(color = 'Green', strength = strength, modified = modified)
         self.color_filter(color = 'Blue', strength = strength, modified = modified)
 
+  def contrast(self, strength = 1.3, modified = False):
+    if modified == False:
+      image = copy.deepcopy(self.dot_image)
+    else:
+      image = copy.deepcopy(self.modified_image)
+    for pixel in image:
+      for j in range(2,5):
+        if pixel[j] >= 255/2:
+          pixel[j] = int(pixel[j] + .2*(255 - pixel[j]))
+        else: 
+          pixel[j] = int(pixel[j] + .2*(0 - pixel[j]))
+    self.modified_image = image
 
-
+    
+  def noise(self, strength = 80, modified = False):
+    if modified == False:
+      image = copy.deepcopy(self.dot_image)
+    else:
+      image = copy.deepcopy(self.modified_image)
+    for pixel in image:
+      for j in range(2,5):
+        pixel[j] += random.randint(int(-strength), int(strength))
+        if pixel[j] <0:
+          pixel[j] = 0
+        if pixel[j] >255:
+          pixel[j] = 255
+    self.modified_image = image
+  def group(self, strength = 128, modified = False):
+    if modified == False:
+      image = copy.deepcopy(self.dot_image)
+    else:
+      image = copy.deepcopy(self.modified_image)
+    for i in range(len(image)):
+      for j in range(2,5):
+        image[i][j] = strength* (image[i][j]//strength) 
+    self.modified_image = image
 
 
 t.tracer(0,0)
@@ -161,7 +184,7 @@ while True:
     q1 = int(input('Enter 1 if you would like to apply a filter or 0 if you would like to try a new image: '))
     if q1 == 0:
       break
-    color = input('Enter one of the following filters: Invert, Red, Blue, Green, Yellow, Magenta, Cyan: ')
+    color = input('Enter one of the following filters: Invert, Contrast, Noise, Group, Red, Blue, Green, Yellow, Magenta, Cyan: ')
     modified = int(input('Enter 1 if you would like to apply this to the current image, 0 for the\noriginal (Choose current if you want to apply multiple filters): '))
     if modified == 1:
       modified = True
@@ -169,6 +192,12 @@ while True:
       modified = False
     if color == 'Invert' or color == 'invert' or color == 'i':
       image.invert(modified = modified)
+    elif color == 'Contrast' or color == 'contrast' or color == 'c':
+      image.contrast(modified = modified)
+    elif color == 'noise' or color == 'Noise' or color == 'n':
+      image.noise(modified = modified)
+    elif color == 'group' or color == 'Group':
+      image.group(modified = modified)
     else:
       image.many_color_filter(color = color, modified = modified)
     image.display()
